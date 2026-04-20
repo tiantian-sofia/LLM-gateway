@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"sofia/gateway/backend"
-	"sofia/gateway/balancer"
-	"sofia/gateway/config"
-	"sofia/gateway/health"
-	"sofia/gateway/proxy"
+	"github.com/tiantian-sofia/LLM-gateway/backend"
+	"github.com/tiantian-sofia/LLM-gateway/balancer"
+	"github.com/tiantian-sofia/LLM-gateway/config"
+	"github.com/tiantian-sofia/LLM-gateway/health"
+	"github.com/tiantian-sofia/LLM-gateway/proxy"
 )
 
 func main() {

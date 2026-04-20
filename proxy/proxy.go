@@ -11,9 +11,9 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"sofia/gateway/balancer"
-	"sofia/gateway/config"
-	"sofia/gateway/converter"
+	"github.com/tiantian-sofia/LLM-gateway/balancer"
+	"github.com/tiantian-sofia/LLM-gateway/config"
+	"github.com/tiantian-sofia/LLM-gateway/converter"
 )
 
 type FailoverTransport struct {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"sofia/gateway/backend"
+	"github.com/tiantian-sofia/LLM-gateway/backend"
 )
 
 type Checker struct {

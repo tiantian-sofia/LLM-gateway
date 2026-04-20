@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"sofia/gateway/config"
+	"github.com/tiantian-sofia/LLM-gateway/config"
 )
 
 type Backend struct {

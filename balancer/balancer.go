@@ -3,7 +3,7 @@ package balancer
 import (
 	"fmt"
 
-	"sofia/gateway/backend"
+	"github.com/tiantian-sofia/LLM-gateway/backend"
 )
 
 // LoadBalancer returns an ordered list of backends to try for a request.

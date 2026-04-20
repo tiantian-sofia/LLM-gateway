@@ -1,7 +1,7 @@
 package balancer
 
 import (
-	"sofia/gateway/backend"
+	"github.com/tiantian-sofia/LLM-gateway/backend"
 )
 
 type PrimaryBackup struct {

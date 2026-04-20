@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"sofia/gateway/config"
+	"github.com/tiantian-sofia/LLM-gateway/config"
 )
 
 type usage struct {
