@@ -1,0 +1,29 @@
+{
+  "listen": ":8080",
+  "strategy": "round-robin",
+  "providers": {
+    "claude": {
+      "api_key": "your-api-key-here",
+      "backends": [
+        {
+          "url": "http://your-backend-host:port",
+          "health_check_path": "/v1/models"
+        }
+      ]
+    }
+  },
+  "models": {
+    "claude-opus-4": {
+      "provider": "claude",
+      "fallback": "claude-opus-4-backup",
+      "input_cost_per_token": 0.000015,
+      "output_cost_per_token": 0.000075
+    }
+  },
+  "health_check": {
+    "interval_seconds": 3,
+    "timeout_seconds": 5,
+    "cooldown_seconds": 6
+  },
+  "request_timeout_seconds": 120
+}
