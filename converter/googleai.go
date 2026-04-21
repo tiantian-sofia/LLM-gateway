@@ -26,7 +26,13 @@ type googleAIContent struct {
 }
 
 type googleAIPart struct {
-	Text string `json:"text"`
+	Text       string              `json:"text,omitempty"`
+	InlineData *googleAIInlineData `json:"inlineData,omitempty"`
+}
+
+type googleAIInlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"`
 }
 
 type googleAIGenConfig struct {
@@ -78,6 +84,7 @@ func convertGoogleAI(body []byte, model string, stream bool) ([]byte, error) {
 	if stream {
 		b := true
 		out.Stream = &b
+		out.StreamOptions = &openAIStreamOptions{IncludeUsage: true}
 	}
 
 	if req.GenerationConfig != nil {

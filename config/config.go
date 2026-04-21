@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 )
 
+
 type Config struct {
 	Listen                string                    `json:"listen"`
 	Strategy              string                    `json:"strategy"`
@@ -16,10 +17,12 @@ type Config struct {
 }
 
 type ModelEntry struct {
-	Provider          string  `json:"provider"`
-	Fallback          string  `json:"fallback,omitempty"`
-	InputCostPerToken float64 `json:"input_cost_per_token,omitempty"`
-	OutputCostPerToken float64 `json:"output_cost_per_token,omitempty"`
+	Provider           string                     `json:"provider"`
+	BackendModel       string                     `json:"backend_model,omitempty"`
+	Fallback           string                     `json:"fallback,omitempty"`
+	InputCostPerToken  float64                    `json:"input_cost_per_token,omitempty"`
+	OutputCostPerToken float64                    `json:"output_cost_per_token,omitempty"`
+	ExtraBody          map[string]json.RawMessage `json:"extra_body,omitempty"`
 }
 
 type ProviderConfig struct {

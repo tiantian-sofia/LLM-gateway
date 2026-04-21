@@ -18,6 +18,13 @@
       "fallback": "claude-opus-4-backup",
       "input_cost_per_token": 0.000015,
       "output_cost_per_token": 0.000075
+    },
+    "gemini-thinking-model": {
+      "provider": "claude",
+      "extra_body": {
+        "thinking": {"type": "enabled", "budget_tokens": 8192},
+        "allowed_openai_params": ["thinking"]
+      }
     }
   },
   "health_check": {

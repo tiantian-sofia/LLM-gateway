@@ -6,9 +6,39 @@ import (
 	"io"
 	"log"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/tiantian-sofia/LLM-gateway/config"
 )
+
+// CostRecord stores the cost data for a single request.
+type CostRecord struct {
+	Time             time.Time
+	Model            string
+	SourceIP         string
+	UserAgent        string
+	InputTokens      int
+	OutputTokens     int
+	TotalTokens      int
+	InputCost        float64
+	OutputCost       float64
+	TotalCost        float64
+}
+
+var (
+	costMu      sync.Mutex
+	costRecords []CostRecord
+)
+
+// GetCostRecords returns a copy of all recorded cost entries.
+func GetCostRecords() []CostRecord {
+	costMu.Lock()
+	defer costMu.Unlock()
+	out := make([]CostRecord, len(costRecords))
+	copy(out, costRecords)
+	return out
+}
 
 type usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
@@ -19,18 +49,20 @@ type usage struct {
 // costTracker wraps a response body, scans for usage data as bytes pass through,
 // and logs the token cost when the body is closed.
 type costTracker struct {
-	inner  io.ReadCloser
-	model  string
-	entry  config.ModelEntry
-	buf    bytes.Buffer
-	logged bool
+	inner     io.ReadCloser
+	model     string
+	entry     config.ModelEntry
+	sourceIP  string
+	userAgent string
+	buf       bytes.Buffer
+	logged    bool
 }
 
-func newCostTracker(body io.ReadCloser, model string, entry config.ModelEntry) io.ReadCloser {
+func newCostTracker(body io.ReadCloser, model string, entry config.ModelEntry, sourceIP, userAgent string) io.ReadCloser {
 	if entry.InputCostPerToken == 0 && entry.OutputCostPerToken == 0 {
 		return body // no pricing configured, skip tracking
 	}
-	return &costTracker{inner: body, model: model, entry: entry}
+	return &costTracker{inner: body, model: model, entry: entry, sourceIP: sourceIP, userAgent: userAgent}
 }
 
 func (ct *costTracker) Read(p []byte) (int, error) {
@@ -95,4 +127,20 @@ func (ct *costTracker) logCost() {
 
 	log.Printf("[cost] model=%s input_tokens=%d output_tokens=%d total_tokens=%d input_cost=$%.6f output_cost=$%.6f total_cost=$%.6f",
 		ct.model, u.PromptTokens, u.CompletionTokens, u.TotalTokens, inputCost, outputCost, totalCost)
+
+	rec := CostRecord{
+		Time:         time.Now(),
+		Model:        ct.model,
+		SourceIP:     ct.sourceIP,
+		UserAgent:    ct.userAgent,
+		InputTokens:  u.PromptTokens,
+		OutputTokens: u.CompletionTokens,
+		TotalTokens:  u.TotalTokens,
+		InputCost:    inputCost,
+		OutputCost:   outputCost,
+		TotalCost:    totalCost,
+	}
+	costMu.Lock()
+	costRecords = append(costRecords, rec)
+	costMu.Unlock()
 }
