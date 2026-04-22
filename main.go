@@ -14,6 +14,7 @@ import (
 	"github.com/tiantian-sofia/LLM-gateway/config"
 	"github.com/tiantian-sofia/LLM-gateway/health"
 	"github.com/tiantian-sofia/LLM-gateway/proxy"
+	"github.com/tiantian-sofia/LLM-gateway/store"
 )
 
 func main() {
@@ -47,6 +48,18 @@ func main() {
 		lbs[name] = lb
 		apiKeys[name] = pc.APIKey
 		allBackends = append(allBackends, backends...)
+	}
+
+	// Initialize database for cost persistence (optional).
+	if cfg.Database != nil && cfg.Database.DSN != "" {
+		costStore, err := store.NewPostgresStore(cfg.Database.DSN)
+		if err != nil {
+			log.Printf("[db] warning: failed to connect to database, running without persistence: %v", err)
+		} else {
+			log.Printf("[db] connected to PostgreSQL, cost records will be persisted")
+			proxy.SetCostStore(costStore)
+			defer costStore.Close()
+		}
 	}
 
 	// Start active health checker for all backends.

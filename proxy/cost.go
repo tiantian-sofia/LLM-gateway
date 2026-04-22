@@ -26,10 +26,52 @@ type CostRecord struct {
 	TotalCost        float64
 }
 
+// CostStore is the interface for persisting cost records to a database.
+// Defined here (alongside CostRecord) to avoid import cycles.
+type CostStore interface {
+	Insert(rec CostRecord) error
+	List() ([]CostRecord, error)
+	Close() error
+}
+
 var (
 	costMu      sync.Mutex
 	costRecords []CostRecord
+
+	costStore   CostStore
+	persistCh   chan CostRecord
 )
+
+// SetCostStore configures a persistent store for cost records.
+// It loads historical records from the store into the in-memory slice
+// and starts a background goroutine to persist new records asynchronously.
+func SetCostStore(store CostStore) {
+	costMu.Lock()
+	defer costMu.Unlock()
+
+	costStore = store
+	persistCh = make(chan CostRecord, 256)
+
+	// Load historical records from the database.
+	records, err := store.List()
+	if err != nil {
+		log.Printf("[cost] warning: failed to load historical records from database: %v", err)
+	} else if len(records) > 0 {
+		costRecords = append(records, costRecords...)
+		log.Printf("[cost] loaded %d historical records from database", len(records))
+	}
+
+	// Start background writer.
+	go persistLoop(persistCh, store)
+}
+
+func persistLoop(ch <-chan CostRecord, store CostStore) {
+	for rec := range ch {
+		if err := store.Insert(rec); err != nil {
+			log.Printf("[cost] failed to persist record to database: %v", err)
+		}
+	}
+}
 
 // GetCostRecords returns a copy of all recorded cost entries.
 func GetCostRecords() []CostRecord {
@@ -142,5 +184,15 @@ func (ct *costTracker) logCost() {
 	}
 	costMu.Lock()
 	costRecords = append(costRecords, rec)
+	ch := persistCh // capture under lock
 	costMu.Unlock()
+
+	// Send to the persist channel (non-blocking).
+	if ch != nil {
+		select {
+		case ch <- rec:
+		default:
+			log.Printf("[cost] warning: persist channel full, record not queued for database")
+		}
+	}
 }

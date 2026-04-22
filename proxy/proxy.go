@@ -181,6 +181,16 @@ func (t *FailoverTransport) tryProvider(req *http.Request, bodyBytes []byte, pro
 			continue
 		}
 
+		// Log 4xx error response bodies to aid debugging.
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			errBody, _ := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			log.Printf("[proxy] %s -> %s: %d body=%s", req.URL.Path, b.URL.Host, resp.StatusCode, truncateLog(errBody, 2048))
+			// Re-wrap the body so downstream consumers can still read it.
+			resp.Body = ioutil.NopCloser(bytes.NewReader(errBody))
+			resp.ContentLength = int64(len(errBody))
+		}
+
 		b.SetHealthy(true)
 		return resp, nil
 	}

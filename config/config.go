@@ -14,6 +14,11 @@ type Config struct {
 	Models                map[string]ModelEntry     `json:"models"`
 	HealthCheck           HealthCheck               `json:"health_check"`
 	RequestTimeoutSeconds int                       `json:"request_timeout_seconds"`
+	Database              *DatabaseConfig           `json:"database,omitempty"`
+}
+
+type DatabaseConfig struct {
+	DSN string `json:"dsn"`
 }
 
 type ModelEntry struct {

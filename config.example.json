@@ -32,5 +32,8 @@
     "timeout_seconds": 5,
     "cooldown_seconds": 6
   },
-  "request_timeout_seconds": 120
+  "request_timeout_seconds": 120,
+  "database": {
+    "dsn": "postgres://user:password@localhost:5432/llmgateway?sslmode=disable"
+  }
 }

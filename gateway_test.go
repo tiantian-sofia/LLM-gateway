@@ -706,12 +706,8 @@ func TestImageResponseConversion(t *testing.T) {
 		Type    string `json:"type"`
 		Role    string `json:"role"`
 		Content []struct {
-			Type   string `json:"type"`
-			Source *struct {
-				Type      string `json:"type"`
-				MediaType string `json:"media_type"`
-				Data      string `json:"data"`
-			} `json:"source,omitempty"`
+			Type string `json:"type"`
+			Text string `json:"text,omitempty"`
 		} `json:"content"`
 		Usage struct {
 			InputTokens  int `json:"input_tokens"`
@@ -726,27 +722,16 @@ func TestImageResponseConversion(t *testing.T) {
 		t.Fatalf("expected non-empty content array, got: %s", body)
 	}
 
-	// Find the image content block.
+	// Images are converted to text placeholders for compatibility with
+	// older Anthropic SDK versions.
 	found := false
 	for _, block := range result.Content {
-		if block.Type == "image" {
+		if block.Type == "text" && block.Text == "[image omitted]" {
 			found = true
-			if block.Source == nil {
-				t.Fatal("image block has nil source")
-			}
-			if block.Source.Type != "base64" {
-				t.Errorf("expected source type 'base64', got %q", block.Source.Type)
-			}
-			if block.Source.MediaType != "image/jpeg" {
-				t.Errorf("expected media_type 'image/jpeg', got %q", block.Source.MediaType)
-			}
-			if block.Source.Data != "/9j/4AAQfakedata" {
-				t.Errorf("expected base64 data '/9j/4AAQfakedata', got %q", block.Source.Data)
-			}
 		}
 	}
 	if !found {
-		t.Errorf("no image content block found in response: %s", body)
+		t.Errorf("no [image omitted] placeholder found in response: %s", body)
 	}
 
 	// Verify usage is preserved.
