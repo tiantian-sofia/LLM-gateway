@@ -99,10 +99,14 @@ const dashboardHTML = `<!DOCTYPE html>
   .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.85rem; }
   .empty { color: #999; padding: 40px; text-align: center; }
   .refresh { font-size: 0.75rem; color: #aaa; margin-top: 16px; }
+  .nav { margin-bottom: 20px; font-size: 0.85rem; }
+  .nav a { color: #0066cc; text-decoration: none; }
+  .nav a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 <h1>LLM Gateway - Token Costs</h1>
+<div class="nav"><a href="/ui/search">Search Records &rarr;</a></div>
 
 <div class="cards">
   <div class="card">

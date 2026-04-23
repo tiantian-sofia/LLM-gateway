@@ -347,6 +347,7 @@ func NewGateway(lbs map[string]balancer.LoadBalancer, apiKeys map[string]string,
 
 	mux := http.NewServeMux()
 	mux.Handle("/ui/costs", CostDashboardHandler())
+	mux.Handle("/ui/search", CostSearchHandler())
 	mux.Handle("/", proxy)
 
 	return mux

@@ -16,6 +16,7 @@
     "claude-opus-4": {
       "provider": "claude",
       "fallback": "claude-opus-4-backup",
+      "backend_model": "claude-opus-4-5",
       "input_cost_per_token": 0.000015,
       "output_cost_per_token": 0.000075
     },

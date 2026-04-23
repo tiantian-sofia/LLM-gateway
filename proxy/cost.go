@@ -26,11 +26,19 @@ type CostRecord struct {
 	TotalCost        float64
 }
 
+// CostFilter specifies criteria for searching cost records.
+type CostFilter struct {
+	StartTime *time.Time // nil = no lower bound
+	EndTime   *time.Time // nil = no upper bound
+	Model     string     // "" = match all, otherwise case-insensitive substring
+}
+
 // CostStore is the interface for persisting cost records to a database.
 // Defined here (alongside CostRecord) to avoid import cycles.
 type CostStore interface {
 	Insert(rec CostRecord) error
 	List() ([]CostRecord, error)
+	Search(filter CostFilter) ([]CostRecord, error)
 	Close() error
 }
 
@@ -80,6 +88,45 @@ func GetCostRecords() []CostRecord {
 	out := make([]CostRecord, len(costRecords))
 	copy(out, costRecords)
 	return out
+}
+
+// SearchCostRecords filters the in-memory cost records by the given criteria.
+// Used as fallback when no database is configured or when DB search fails.
+func SearchCostRecords(filter CostFilter) []CostRecord {
+	costMu.Lock()
+	defer costMu.Unlock()
+
+	var out []CostRecord
+	modelLower := strings.ToLower(filter.Model)
+	for _, rec := range costRecords {
+		if filter.StartTime != nil && rec.Time.Before(*filter.StartTime) {
+			continue
+		}
+		if filter.EndTime != nil && rec.Time.After(*filter.EndTime) {
+			continue
+		}
+		if filter.Model != "" && !strings.Contains(strings.ToLower(rec.Model), modelLower) {
+			continue
+		}
+		out = append(out, rec)
+	}
+	return out
+}
+
+// GetDistinctModels returns the unique model names from the in-memory records.
+func GetDistinctModels() []string {
+	costMu.Lock()
+	defer costMu.Unlock()
+
+	seen := map[string]bool{}
+	var models []string
+	for _, rec := range costRecords {
+		if !seen[rec.Model] {
+			seen[rec.Model] = true
+			models = append(models, rec.Model)
+		}
+	}
+	return models
 }
 
 type usage struct {

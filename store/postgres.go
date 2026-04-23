@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/tiantian-sofia/LLM-gateway/proxy"
@@ -46,6 +47,17 @@ func NewPostgresStore(dsn string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("creating cost_records table: %w", err)
 	}
 
+	// Create indexes for search performance.
+	for _, idx := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_cost_recorded_at ON cost_records (recorded_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_cost_model ON cost_records (model)`,
+	} {
+		if _, err := db.Exec(idx); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("creating index: %w", err)
+		}
+	}
+
 	return &PostgresStore{db: db}, nil
 }
 
@@ -59,6 +71,57 @@ func (s *PostgresStore) Insert(rec proxy.CostRecord) error {
 		rec.InputCost, rec.OutputCost, rec.TotalCost,
 	)
 	return err
+}
+
+// Search returns cost records matching the given filter criteria.
+func (s *PostgresStore) Search(filter proxy.CostFilter) ([]proxy.CostRecord, error) {
+	query := `SELECT recorded_at, model, source_ip, user_agent, input_tokens, output_tokens, total_tokens, input_cost, output_cost, total_cost
+		 FROM cost_records`
+
+	var conditions []string
+	var args []interface{}
+	argN := 1
+
+	if filter.StartTime != nil {
+		conditions = append(conditions, fmt.Sprintf("recorded_at >= $%d", argN))
+		args = append(args, *filter.StartTime)
+		argN++
+	}
+	if filter.EndTime != nil {
+		conditions = append(conditions, fmt.Sprintf("recorded_at <= $%d", argN))
+		args = append(args, *filter.EndTime)
+		argN++
+	}
+	if filter.Model != "" {
+		conditions = append(conditions, fmt.Sprintf("LOWER(model) LIKE $%d", argN))
+		args = append(args, "%"+strings.ToLower(filter.Model)+"%")
+		argN++
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	query += " ORDER BY recorded_at ASC"
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []proxy.CostRecord
+	for rows.Next() {
+		var rec proxy.CostRecord
+		if err := rows.Scan(
+			&rec.Time, &rec.Model, &rec.SourceIP, &rec.UserAgent,
+			&rec.InputTokens, &rec.OutputTokens, &rec.TotalTokens,
+			&rec.InputCost, &rec.OutputCost, &rec.TotalCost,
+		); err != nil {
+			return nil, err
+		}
+		records = append(records, rec)
+	}
+	return records, rows.Err()
 }
 
 // List returns all cost records ordered by time ascending.
